@@ -20,6 +20,15 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 
 每课的固定结构：**读**（讲义 + 文章）→ **懂**（概念讲解 + 思考题）→ **做**（HW1 的题，测试变绿）→ **迁移**（这一课在 EQB agent 里对应什么）→ **记**（设计决定写进笔记）。
 
+## 学习方式：指挥 AI，不亲手写代码
+
+最终目标：在自己的电脑或任何云端，能指挥 AI 把 agent harness 写好、调好、用好。
+
+- 你写 brief 和事前预测。子 agent 写代码：默认 Haiku，失败两次升到 Sonnet，不用 Opus。HW1 的测试当裁判。另一个子 agent 做审查。你验收并接受抽查。
+- 你不写代码，但要读关键代码。
+- 流程和证据标准见 `prompts/course-driver.md`（换一台机器，把它贴给 AI 就能接着学）。brief 模板见 `prompts/brief-template.md`。
+- 两本日志：`notes/design-decisions.md`（决定、理由、证据）和 `notes/ai-mistakes.md`（AI 犯的错，以及提炼出的 brief 规则）。
+
 ## 课表
 
 | 课 | CS329Z 讲次 | 配套阅读 | 动手（HW1） | EQB 迁移 |
@@ -48,6 +57,8 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 - `notes/readings.md`：所有文章的读书笔记，每篇末尾写"对 EQB 的启发"
 - `lessons/`：每课的讲义和作业
 - `CURRICULUM.md`：本文件
+- `hw1/`：CS329Z HW1 starter（MIT 协议，来源见 `hw1/UPSTREAM.md`）
+- `prompts/`：可复用的提示词（课程驱动、brief 模板、做深元提示词）
 
 ## 讲义
 

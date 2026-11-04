@@ -133,61 +133,47 @@ OpenAI 列了值得建 agent 的三种情况：
 
 **题 4（L01 的挑战）**：L01 列了五大挑战：可靠性、训练、长程、安全、评测。其中「可靠性」又拆成三点：同一任务跑两次结果是否一致、小扰动下是否稳定、失败时是否失败得清楚、能恢复。EQB 组卷 agent 最怕哪一种？举一个具体的失败场景。
 
-## 4. 做：HW1 环境 + P1
+## 4. 做：指挥 AI 完成 P1
 
-### 4.1 准备（第 0 课）
+你不写代码。你写 brief，派子 agent 去写，用测试验收。完整流程见 `prompts/course-driver.md`，brief 模板见 `prompts/brief-template.md`。
 
-1. 申请一个 [OpenRouter](https://openrouter.ai) 的 API key。HW1 的 LM 包装就是走 OpenRouter 的。先充一点钱，按 HW1 自己的估计，所有实时测试跑一遍大约 $0.25。
-2. 在你的电脑上装 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
-3. 克隆 HW1：
+### 4.1 环境（已在云端验证）
 
-```bash
-git clone https://github.com/cs329z/assignment1-harness.git
-```
+- HW1 starter 放在仓库的 `hw1/` 目录，来源说明见 `hw1/UPSTREAM.md`。
+- 确定性测试**不需要 API key**：`cd hw1 && uv run python data/download.py && uv run pytest`。现在应该全部失败，报 `NotImplementedError`。
+- 实时测试需要一个能被代码调用的真模型。云端的 `claude -p --model haiku` 可以用（已试通，一次调用约 3 秒）。到时候写一个适配器接进 `LM`。
 
-```bash
-cd assignment1-harness && cp .env.example .env
-```
+注意两点：
 
-4. 编辑 `.env`，填 `OPENROUTER_API_KEY`，并把 `CS329Z_BUDGET_USD` 设成 `2`（自己给自己加一道花钱上限）。
-5. 解压数据，跑一遍测试。这时候应该全部失败，报 `NotImplementedError`：
-
-```bash
-uv run python data/download.py
-```
-
-```bash
-uv run pytest
-```
+- 课程的评分模型是 `openai/gpt-6-luna`，`thresholds.py` 的门槛是按它定的，换成 Haiku 以后结果只能参考。
+- `claude -p` 默认会带上 Claude Code 自己的系统提示和工具，要用 `--system-prompt` 和 `--tools` 关掉，它才是一个"干净"的模型。
 
 ### 4.2 P1：给邮件判优先级
 
-先读这几个文件：
+先读一手材料，不要读我的转述：
 
-- `cs329z_hw1/adapters.py` 里的 `run_priority`
-- `cs329z_hw1/llm.py`，重点看 `LM` 和 `ScriptedLM`
-- `data/priority_rubric.md`
-- `tests/test_priority.py`
+- `hw1/cs329z_hw1/adapters.py` 里的 `run_priority`
+- `hw1/cs329z_hw1/llm.py`，重点看 `LM` 和 `ScriptedLM`
+- `hw1/data/priority_rubric.md`
+- `hw1/tests/test_priority.py`
 
-要求：一次模型调用，返回 `{"category": "urgent"|"normal"|"ignore"|"unknown", "reason": str}`。
-
-你要做的三个设计决定：
+这道题有三个设计决定，brief 里要说清楚哪些你定、哪些交给子 agent：
 
 1. **prompt 怎么让模型按固定格式回答？** 比如要求最后一行写 `LABEL: urgent`。
 2. **解析器怎么做到稳？** 测试会喂各种乱七八糟的回复。找不到标签就返回 `unknown`，不能抛异常。
 3. **rubric 放多少进 prompt？** 实时测试用的是另外 60 封邮件，只贴合公开样例的 prompt 过不了。
 
-顺序：先让确定性测试变绿（免费），再跑实时测试：
+注意有两条规则互相拉扯：
 
-```bash
-uv run pytest tests/test_priority.py
-```
+- "看不出标签就返回 `unknown`，不许猜"：这条靠**解析器**满足。
+- "接真模型时永远不能出现 `unknown`"：这条靠 **prompt** 满足。
 
-```bash
-CS329Z_EVAL_SLICE=5 uv run pytest tests/test_priority.py -m live -s
-```
+### 4.3 你交的东西
 
-做完把你的 `run_priority` 代码贴给我，我帮你看。
+1. 一份 brief（六段格式）。
+2. 两三句事前预测：子 agent 最可能在哪里做错？
+
+我审完 brief，就派 Haiku 去执行。之后按 `course-driver.md` 的第 4–7 步走。
 
 ## 5. 迁移到 EQB
 
@@ -197,4 +183,4 @@ P1 的模式是「一次调用 + 结构化解析 + 兜底」，在 EQB 里有直
 
 ## 6. 记
 
-做完以后，在 `notes/` 里新建 `design-decisions.md`，记下 P1 的三个设计决定，以及为什么这么选。这就是 HW1 最后那份设计备忘录（P17）的草稿。
+做完以后，在 `notes/design-decisions.md` 里记下 P1 的三个设计决定、理由和证据，在 `notes/ai-mistakes.md` 里记下子 agent 犯过的错。这就是 HW1 最后那份设计备忘录（P17）的草稿。
