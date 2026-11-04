@@ -28,6 +28,8 @@ Google / Kaggle 5 天强化课系列（白皮书 3 的延伸）：
 
 ## 学习路线
 
+> 详细课表见 [CURRICULUM.md](CURRICULUM.md)（以 CS329Z + HW1 为主线），读书笔记在 [notes/readings.md](notes/readings.md)，每课讲义在 [lessons/](lessons/)。
+
 1. 先做一个能跑的：Hugging Face Agents Course 或 Kaggle 5 天课
 2. 读上面 1–3 篇文章
 3. 只挑 CS329Z 关键几讲：基础全景、工具调用与 MCP、框架与编排、设计模式、记忆与多智能体、评测、安全与护栏
