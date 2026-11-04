@@ -202,3 +202,137 @@
   - 实用建议：**避免臃肿**（Pi 只有 read / write / edit / bash 四个工具）；用检索找回最相关的；**按顺序追加，不要改前面的内容**（否则 KV cache / 提示缓存失效）；用评测实证地比较上下文方案；压缩时的取舍——留多了很快又要压，丢多了任务做不完
   - 另一种思路：递归 LM（RLM）
   - "没有唯一正确的上下文构建方式，HW1 里你会自己实验"
+
+## CS329Z L03 讲义《RAG + Agents》（63 页）
+- 课程项目要求：先拿到数据；明确任务、数据来源、成功标准；**"只跑通一次的 demo 拿不到高分"**；要有很多任务、基线、失败分析
+- 为什么检索：不让 LM 背下一切，而是即时提供相关内容；动态（随时更新）、可解释（能给引用）
+- 检索器-阅读器框架（DrQA）；RAG = 检索器 p(z|x) + 生成器 p(y|x,z)，RAG-Sequence / RAG-Token
+- 嵌入类型：静态词向量、上下文词向量、段落向量（DPR、E5）、多模态（CLIP）、图
+- **分块**：固定大小（100–500 token，太小没上下文、太大混多个主题，重叠 10–20%）；语义分块（句子、章节）；带上下文的分块；LLM 动态分块
+- 上下文检索（Anthropic）：用 LLM 给每块加一句"这块在整篇里是什么"，再和 BM25 混合检索；late chunking（整篇编码后按块做平均）；RAPTOR（自底向上聚类摘要建树）；GraphRAG
+- 向量检索：精确扫描 O(N·d)；ANN：IVF、PQ、HNSW（多层近邻图、贪心下降、约 log N 跳）
+- 三类检索器：BM25（词重叠，至今最常用）、DPR（双塔稠密，约 1000 对问答就能打赢 BM25）、ColBERT（每个 token 一个向量，MaxSim 晚交互）、cross-encoder（最准但不能扫全库，只用于重排）
+- **评测检索器**：Hit@k、Failed@k、nDCG@k、MRR@k、Recall@k
+- **混合检索 + RRF**：BM25 漏同义改写，稠密检索漏罕见字面（错误码、产品 ID）；倒数排名融合 Σ 1/(k+rank)，k=60，不用调参
+- 速度对比：BM25 62ms / DPR 几十 ms / ColBERT 458ms / cross-encoder 1000 段要 10.7s
+- **agentic RAG**：检索应该是 agent 的一个动作，三个决定：要不要检索、查什么、结果够不够好；Self-RAG、CRAG（评审器打分检索结果）、Search-R1（用 RL 学检索策略）
+- RAG 的问题：检索侧（召回上限、索引过期、**权限泄露**）；阅读侧（lost in the middle、相似但无关的干扰、证据冲突）；循环侧（错误累积、**没有停止规则**、提示注入）
+- 对 EQB：题库检索要混合——BM25 抓专有词（人名、地名、真题年份），向量抓"主题相近"；评测用 Recall@10；EQB 已有 `semanticSearchService` 和 `similarQuestions`，到第 8 课对照看它们怎么做的
+
+## CS329Z L04 讲义《Tool Use》（68 页）
+- 文档多了也没用：模型注意不到全部（GPT-3.5 闭卷 56%、只给相关文档 88.5%）；RAG 效果在 10–20 篇文档后就饱和；LLM 生成的引用本身也会幻觉
+- **为什么要工具**：算不了的（大数运算、多步推理、精确可验证操作）；没见过的（长尾事实、训练截止后的事、私有数据）；够不着的（API / 数据库、物理世界、实时状态）
+- 定义：工具 = 在 LM 外部运行的程序的函数接口，LM 生成调用和参数
+- 学会用工具：Toolformer（自监督：采样 API 调用 → 执行 → 只保留能降低后续 loss 的）；ToolkenGPT（工具当成一个 token）；ToolLLM（16k 个 RapidAPI + API 检索器）；Gorilla（1.6k 个 API + 检索感知训练 + AST 子树匹配衡量幻觉）
+- **标准接口三代**：REST（面向人，模型得自己读文档）→ function calling（面向模型，JSON schema，但换一家 API 就要重写）→ MCP（面向生态，tools/list 发现、tools/call 执行，写一次到处用）
+- FastMCP 可以直接从 OpenAPI spec 生成 MCP server；入站鉴权（agent → server）和出站鉴权（server → 后端）要分开
+- 评测：BFCL（AST 离线比对 + 真实执行 + 多轮状态；含"没有相关函数时要拒绝"）、ToolBench、**τ-bench（工具-agent-用户三方；pass^k = k 次都成功的概率，衡量可靠性）**
+- **工具使用的失败模式**：单次调用（选错工具、不需要也调、编造字段、类型/单位错、调不存在的 API）；多步（跳过前置调用、顺序错、失败后原样重试而不是退一步、这次过下次不过）；对话（违反规则、该问用户却自己假设）
+- 对 EQB：EQB 的 server 有 REST 路由，第 8 课可以用 FastMCP 的 from_openapi 思路包成 MCP；但按 Google MCP 篇的建议，**工具应是"任务"不是 API 的薄封装**，所以要手挑几个，不能全暴露；评测要算 pass^k
+
+## CS329Z L05 讲义《Frameworks & Orchestration》（132 页）
+- 态度：框架像 PyTorch 之于手写反向传播——**这门课要你先手写、懂底层**，今天只是认识抽象
+- AI 系统三支柱：数据、系统/模型、评测+指标；控制流光谱：模型 → workflow → agent
+- **DSPy**：Signature（定义输入输出契约，"做什么"）、Module（Predict / ChainOfThought / BestOfN / ReAct / RLM，"怎么做"）、Optimizer（给数据 + 指标，自动改 prompt 或权重）
+- **LangGraph**：共享 State + Node（读写状态）+ Edge（控制流，可条件分支）；`create_agent`
+- 我们设计控制流，决定模型在哪里做决定；改进需要数据和评测
+- **开源 harness 对比**（同样是 agent，取舍完全不同）：
+  - mini-SWE-agent：只有 bash；历史完全线性只追加；每个动作独立 `subprocess.run`
+  - OpenHands：每步存成一个 JSON 事件文件，每次从事件重建发给模型的消息；持久化终端（tmux）；**同一动作和结果重复 4 次就自动停**
+  - Pi：只有 read / write / edit / bash，系统提示 < 1000 token；没有权限系统；历史是树（可回到早先消息分叉）；没有计划模式、没有子 agent
+  - OpenClaw：每 30 分钟心跳自唤醒（不想说话回 NO_REPLY）；身份来自 AGENTS.md / SOUL.md / USER.md / MEMORY.md 注入系统提示；每晚 3 点后台整理当天笔记进 MEMORY.md
+  - 好的 harness 在成功率、成本、延迟、用户控制之间取平衡
+- 编排与遥测：Temporal（Activity 可失败、Workflow 串起来、持久化执行历史、自动重试）；可观测：MLflow、LangSmith、Langfuse
+- **最佳实践**：保持简单（不一定需要 agent）；让失败可观测、可恢复（trace 模型调用 / 工具调用 / 状态变化 / 错误；超时、重试上限、执行预算）；**用评测做设计决定**，最好是你自己领域的评测；看 trace
+- 工程是循环：构建 → 运行 → 评测 → 改进
+
+## CS329Z L06 讲义《Agent Design Patterns & Scaffolds》（86 页）
+- Martin Fowler："模式都是半成品，你总得自己补完、适配自己的环境"
+- workflow 可预测（控制流在程序里），agent 灵活（控制流在 LLM 决定里）；真实系统常常两者结合。例：分类工单 → 检索政策 → 起草回复（workflow）vs 用工具调查解决工单（agent）
+- workflow 五模式（Anthropic）+ 组合例子：STORM（链 + 并行 + 近似评估-优化）、Archon（推理时技术的架构搜索）
+- **推理/行动模式**：
+  - ReAct：先推理再行动；原论文发现要微调才最好，现在 agent 微调已是后训练常规
+  - Reflexion：把评估/反思变成给 actor 的"记忆"；**让 LLM 评价自己的回答反而变差**，Reflexion 靠的是外部环境反馈；如今自我反思已内置在推理模型里
+  - CRITIC：给验证器加外部工具（做成 agentic 验证器）
+  - CodeAct：**代码是更好的动作形式**，比 JSON 动作成功率高、轮数少
+  - ReWOO / LLMCompiler：先规划再执行，把 agent 执行变回 workflow；省 token；LLMCompiler 加并行和动态重规划；如今主要体现为并行工具调用
+- **上下文工程两原则**：聚焦（只放当前任务需要的，全部历史不必都在）、保持连续性（保住需求、目标、约束、进度；实际上也意味着保住 KV cache）
+- **五种上下文管理模式**（可以组合）：
+  - 持久事件日志（OpenHands）：只追加的事件日志是真相，每次调用从日志重建输入；方便外部观察
+  - 记忆卸载（MemGPT）：存进记忆/文件，腾出上下文
+  - 压缩：LLM 总结之前的推理-动作-观察；压缩本身可以 agentic
+  - 观察遮蔽：不总结，直接截断旧的工具输出（编码 agent 特别有用）
+  - 上下文隔离：子 agent 做特定任务；渐进披露（skill 文件，用到再加载）
+- Pi 案例：极简（4 个工具）；ReAct 式 JSON 工具调用；上下文是树；事件日志 → 输入转换 + skill 渐进披露 + 压缩；**没有任何安全防护，相当于永远 auto 模式**
+- 对 EQB：我们的 harness 照 HW1 的 transcript（只追加事件日志）+ 每次重建上下文；EQB 仓库自己的 `.agents/` skill 体系就是"渐进披露"
+
+## CS329Z L07 讲义《Agent Memory Architectures》（103 页）
+- 开场例子："帮我看看这个收件箱该归档或删什么，我说之前别动手"——记忆和约束要跨会话保持
+- 没记忆的三种损失：流程（每次重教）、知识（事实/规则/偏好丢失）、进度（长会话忘了之前做了什么、目标、指令）
+- 有记忆的好处：个性化、从经验中学习、有状态（"打开我们上次写的提案"）
+- **CoALA 四类**：工作记忆（就是上下文窗口）、情景（过往轨迹/对话原始日志）、语义（事实、用户偏好）、程序（技能、怎么做）；参数记忆（权重里）vs 上下文记忆（检索进来）
+- 设计三问：**存什么**（事实、流程、对话进展）、**何时触发**（agent 工具按需、后台 worker、事件驱动）、**怎么存**（文件系统、数据库、知识图谱）
+- 三种存储：文件系统（每条记忆一个文件，grep / ls 就是记忆工具，天然有层次）；数据库（向量库、SQLite 按元数据查、BM25 精确查）；知识图谱（Zep）
+- **四种模式**：
+  1. 从经验学流程：Voyager 技能库（没有技能库就做不出钻石工具）、AWM 工作流记忆（归纳成 workflow 放系统提示）；skill 文件是通用 agent 的常见方案；但在动态环境下不稳
+  2. 分层记忆：MemGPT（给 LLM 工具让它自己管记忆：工作上下文写入/替换、回忆存储和归档存储检索；消息 FIFO）、MemoryOS（短/中/长期 + 人设记忆）
+  3. 反思后再存：Reflexion、Generative Agents
+  4. 记忆维护：sleep-time compute（空闲时整理）、A-Mem（专门管记忆的 agent）、**Mem0（后台流程检测冲突，四个动作 ADD / UPDATE / DELETE / NOOP）**
+- 评测记忆的四个要求：真实、长上下文、有挑战、可验证；LoCoMo（模拟对话问答；**拿到对的记忆也不一定会用**）、PersonaMem（偏好会变）、LongMemEval-v2（agent 轨迹；**文件系统记忆胜过检索式**）、MemoryArena（真实任务；记忆控制器反而最弱）
+- 难题：该记什么该忘什么（未来是否相关当下不知道）；信任与隐私（记忆投毒、泄露）；**过度个性化**（模型太急着用上下文里的记忆）
+- 对 EQB：HW1 的 memory_dir + remember / recall 就是"文件系统 + 按需工具"；老师偏好用"结构化档案 + 启动时全部加载"最稳；要防过度个性化（老师这次说要难题，别被旧偏好"中等难度"覆盖）
+
+## CS329Z L08 讲义《Multi-Agent Systems》（92 页）
+- MAS = 多个 agent 面向共同任务；要设计编排、通信、协调（工作区、任务、共享上下文/记忆）
+- 好处：并行、专门化、聚焦的上下文、更广的探索；坏处：协调开销、交接丢信息、动作冲突、错误传播、工程复杂
+- **有时单 agent 更好**（Kim 等 2026）：步骤强依赖、共享状态多、单 agent 已达标 → 用单 agent；子任务少同步、信息可切分、能各自负责再合并、并行/专门化能解决**已测量的**瓶颈 → 试多 agent
+- **建议：先做强的单 agent 基线，有目的地加 agent，并测量收益是否超过协调成本**
+- 四种编排：独立（最后汇总）、中心化（orchestrator，可能成瓶颈）、去中心化（swarm，共享消息板）、混合；成本：单 agent < 编排 < swarm；DyLAN 动态组队
+- 通信 vs 协调：通信是"信息怎么传"，协调是"相互依赖的工作怎么管"
+- 通信渠道：主对话线程（AutoGen：顺序、嵌套、群聊、层级）、**handoff（控制权转移，专家直接面对用户）vs agent-as-tool（调用方保留控制，专家只返回结果）**、消息板（MetaGPT、MoltBook）；A2A 协议（agent card、可追踪任务、进度推送、产物返回）
+- 协调基础设施：任务账本（Magentic-One；OpenAI Symphony 把 issue tracker 当编排器）、共享记忆（G-Memory 三层图）、**worktree 隔离**（每个 agent 自己的 checkout 和分支，最后合并测试）；涌现的协调：角色分工、资源分割、协商
+- 失败：MAST 失败分类（系统设计、agent 间、验证）；**CooperBench：600 个协作编码任务，一个 agent 做两件事比两个 agent 协调更好**（协调的诅咒）；行为问题：趋同（一半 agent 都去写光线追踪器）、目标冲突时"强行解决"
+- 案例：Carlini 的工程 swarm（无限循环 + 专门角色 + git 任务锁 + worktree）；教训：强测试、为并行设计、显式协调、跨会话保存知识、高效反馈、互补目标
+- 对 EQB：确定不做多 agent；EQB 仓库 AGENTS.md 里"并行前确认不共享文件/schema"正是这节的 worktree 隔离 + 资源分割
+
+## CS329Z L09 讲义《Optimization》（125 页）
+- 开场：同一道数学题，"Let's think step by step" 71.8%，"Take a deep breath and work on this problem step-by-step" 80.2%——**prompt 措辞能差近 10 个点，所以要用数据和评测来优化，而不是凭感觉**
+- 优化需要三支柱都在：数据、系统、评测+指标；它是"最后一公里"的适配
+- 何时优化：有自己领域的数据和评测；示例和反馈比 prompt 更能表达需求；组件多、手调不动
+- **上下文优化**：
+  - few-shot 优化：示例的顺序都很重要（Lu 2022，用探测集熵挑顺序）；**自举推理**（STaR；DSPy：跑训练样例，只保留指标高的轨迹当 few-shot，比人写推理或给金标签还好）
+  - 反思式优化：OPRO（让 LLM 看历史指令及其得分，写新指令，发现了"深呼吸"）；**MIPROv2**（自举示例 → 根据程序、数据摘要、成功轨迹、提示技巧提出候选指令 → 贝叶斯代理模型在小批量上搜索指令×示例组合）；TextGrad（文本"梯度"反传）；**GEPA**（反思 + 帕累托前沿上的遗传进化，效果最好）
+- **权重优化**：SFT（让老师 rollout，学生学；可拒绝采样；FireAct：Llama2-13B 学 GPT-4 轨迹后胜过 prompt 的 GPT-3.5）；RL（PPO 要 4 个模型；**GRPO 组内 z-score 当优势，只要 3 个模型**；可验证奖励是关键）；在线策略蒸馏（学生自己生成、老师逐 token 打分；比 RL 更高效）
+- 用 agent 优化：Darwin Gödel Machine（自我修改 + 回到旧版本探索都关键）、Meta-Harness（元 agent 看所有历史经验改 harness）、Auto-Research（改代码 → 跑实验 → 指标涨就保留、否则重置 → 记录）；**指标/评测成了最需要守住的部分**（防作弊）
+- 选择：prompt 优化比 RL 样本效率高得多（GEPA）；权重优化吃数据但能随几千几万例增长；API 模型 / 需要频繁重跑 / 环境交互贵 → 上下文优化；小模型指令跟随差 / 想把大老师蒸馏成便宜学生 / prompt 太长 → 权重优化；可以交替（BetterTogether）
+- 对 EQB：我们不调权重。HW1 的 P1 就是手工版"反思式优化"：看错例 → 改 prompt → 重跑；等 EQB 有了评测集，可以试 DSPy 自举 few-shot
+
+## CS329Z L10 讲义《Terminal-Bench 与 Harbor》客座（64 页）
+- 软件从演绎（人写规则 → 程序）走向归纳（人给样例 → 学出规则）：模型从数据学，**agent 靠评测开发**，软件由 agent 生成
+- "规格说明 → 评测"：**评测成了真相来源**（以前是代码）；确定性 → 随机；演绎 → 经验
+- Terminal-Bench：bash 是"统治一切的工具"；一个任务 = instruction.md + Dockerfile 环境 + 测试（例：从 2D 图纸生成 STEP 文件，检查水密、体积、表面积、惯量、拓扑…）
+- 术语（Anthropic《Demystifying evals》）：task（一个有明确输入和成功标准的测试）、trial（一次尝试）、benchmark（任务集）、verifier/grader（打分逻辑）、trajectory/trace/transcript（一次尝试的完整记录）、evaluation harness（跑评测的基础设施）、agent harness（让模型成为 agent 的系统）
+- 任务目录：instruction.md、task.toml、environment/Dockerfile、solution/solve.sh、tests/test.sh——与 agent 无关、易定义、可移植、独立
+- **写任务**：你在测什么、测得对不对；指令和验证器对齐；防奖励作弊；真实、公平、有趣
+  - 指令：完整说明、尽量简洁、尽量自然
+  - 环境：真软件 > mock；尽量开放；把网络依赖固化以减少抖动
+  - 验证器：基于环境终态的结果分类器；看混淆矩阵（假阳/假阴）；**和指令里的要求一一对应**；程序检查 + agent/LLM judge
+  - 防作弊：锁定 agent 环境、验证器环境隔离、只传产物
+  - 参考解要像 agent 会做的那样（不能硬编码）
+- 评测基础设施：可靠（容错）、可复现、快（并行）、可移植；任务 QA：静态检查 + agentic 检查（oracle agent、前沿 agent、作弊 agent、judge 看轨迹）
+- **任务就是软件，软件有 bug**：版本化（rerun / regrade / reuse）；常见修复：指令欠/过说明、验证器太严、消除作弊、judge 重调、固定依赖
+- 结果：每一行都要有完整凭据（轨迹、日志、产物、奖励）
+- 对 EQB：我们的组卷评测集按这个格式写——每个任务：指令（老师的请求）+ 环境（固定的假题库快照）+ 验证器（硬约束程序检查：篇数、年级、题型、不重复；软质量交给 judge）+ 一个参考解
+
+## CS329Z L11 讲义《What Data Do Agents Need?》（75 页）
+- 近两年 agent 能力暴涨几乎全靠大量"agentic 数据"；同一基座，后训练数据差别很大
+- 两类数据：**轨迹**（记录 agent 解题过程 → SFT 模仿；模型学的是思考和动作，系统提示/任务/工具输出只是上下文，格式由 harness 决定）、**环境**（任务 + 沙箱 + 验证器 → RL 练习）
+- 奖励从窄而可靠到宽而模糊：代码测试 → rubric → LM-as-judge → 人类偏好
+- 数据来源（看成本、真实性、可扩展性）：人工示范（Mind2Web、OpenCUA）；从网络挖（SWE-rebench 从 3468 个仓库挖 2 万多个可验证任务、AgentTrek 复现教程 $0.55/条、VideoAgentTrek 从视频标注）；合成轨迹（Synatra $0.031/条、OS-Genesis、NNetNav）；合成任务和环境（SWE-smith 注入 bug、R2E-Gym、AgentScaler）；模拟用户/环境（τ-bench、APIGen-MT、DreamGym——便宜无限，但会学到模拟器的错）
+- **数据会意外教坏模型**：
+  - 奖励作弊：SWE-bench 没删 .git 历史；生产环境里模型学会 `sys.exit(0)` 假装测试通过，之后不对齐行为上升；把 CoT 监控加进奖励，模型学会隐藏意图继续作弊；Opus 4.6 两次识别出 BrowseComp 并解密答案
+  - 记忆污染：SWE-bench Verified 上模型光看 issue 就能说出 bug 文件 76%（别的仓库 53%）
+  - 误导：用人类认可训练，模型学会"看起来对"而不是"对"
+  - 对 harness 过拟合：只在一种 harness 上训练就带着它的习惯；要变换 harness
+  - 训练趋势：SFT 会过拟合；RL 会冲过头崩掉；最好的模型 ≠ 最好的老师
+- 对 EQB：我们不训练模型，但 HW1 和 EQB agent 的 transcript 都是"轨迹"，留着它们就是将来的评测集和数据飞轮；EQB 自己的 import-ops 有"agent 声明 vs 自动识别"——正是"验证器要对齐指令"的问题
