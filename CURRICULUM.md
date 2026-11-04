@@ -30,9 +30,9 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 | 3 | L04 工具调用与 MCP | Google《Agent Tools & MCP》；12-Factor F1、F4；BEA 附录 2 | P5 工具注册表；P6 工具调用协议 | 设计 `search_questions`、`get_question` 的 schema |
 | 4 | L05 框架、L06 设计模式（ReAct） | 12-Factor F2、F3、F5、F8、F9、F13；OpenAI 指南编排部分 | P2 每日摘要（workflow）；P7 agent 循环；P8 工具组装 | 组卷：哪些写死、哪些交给模型 |
 | 5 | L06 上下文管理、L07 记忆 | Google《Context Engineering》；Anthropic《Effective harnesses》 | P9 检索当工具；P10 终端；P11 压缩；P12 记忆 | 老师偏好档案（年级、难度、题型），不存学生数据 |
-| 6 | L08 多智能体（只读）、L18 安全与护栏 | Anthropic《Multi-Agent Research System》；OpenAI 指南护栏部分；Google MCP 篇安全部分 | P13 审批 / 插话 / ask_user；P14 deny 规则与提示注入 | 保存、发布试卷前必须老师确认 |
+| 6 | L08 多智能体（只读）、L17 安全与护栏 | Anthropic《Multi-Agent Research System》；OpenAI 指南护栏部分；Google MCP 篇安全部分 | P13 审批 / 插话 / ask_user；P14 deny 规则与提示注入 | 保存、发布试卷前必须老师确认 |
 | 7 | L13 评测基础、L15 LLM-as-judge | Google《Agent Quality》《Prototype to Production》；Anthropic《C compiler》 | P15 模拟用户评测；P16 使用笔记；P17 设计备忘录 | 20 个组卷请求的评测集 |
-| 8+ | L19 编码 agent（参考） | 12-Factor 全部回顾 | — | EQB agent：假数据 → EQB HTTP API → MCP |
+| 8+ | L18 编码 agent（参考） | 12-Factor 全部回顾 | — | EQB agent：假数据 → EQB HTTP API → MCP |
 
 ## 完成标准（沿用 README）
 
@@ -49,7 +49,9 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 - `lessons/`：每课的讲义和作业
 - `CURRICULUM.md`：本文件
 
-## 已知缺口
+## 讲义
 
-- CS329Z 讲义 PDF 放在 `web.stanford.edu/class/cs329z/slides/` 下，这个云端环境访问不了（503，证书链问题）。课程主页、课表和 HW1 都读过了。讲义需要你在自己电脑上打开。
-- 每讲的论文（ReAct、MemGPT 等）还没读，讲到对应那课时再读。
+- 讲义 PDF 的地址是 `http://web.stanford.edu/class/cs329z/slides/lectureXX.pdf`（XX 是讲次，从课表页的 Slides 链接点进去）。这个环境里只能用 `http://` 下，`https://` 会被证书拦住。
+- 第 01–11 讲已经挂出来了。第 12 讲（Data Selection）之后课表上暂时没有讲义。
+- 讲次编号按课表顺序：01 基础、02 LLM、03 RAG、04 工具、05 框架、06 设计模式、07 记忆、08 多智能体、09 优化、10 Terminal-Bench、11 数据、12 数据选择、13 评测基础、14 吴恩达座谈、15 LLM-as-judge、16 SWE-bench、17 安全、18 编码 agent、19 主动式 agent。
+- 每讲指定的论文（ReAct、MemGPT 等）讲到对应那课时再读。

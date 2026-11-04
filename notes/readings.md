@@ -171,3 +171,34 @@
   - P15 模拟用户评测：20 个 persona，程序检查 + judge 都过才算成功
 - 设计备忘录 10 问（协议、终止规则、检索窗口、观察策略、压缩、记忆、审批、沙箱、局限）= 我们每课的"设计决定"
 - 对 EQB：这份作业的结构就是我们 EQB agent 的蓝图——先完整做一遍 HW1，再把同一套 harness 换成 EQB 的工具和数据
+
+## CS329Z L01 讲义《Intro to Agentic Systems》（71 页）
+- 课程定位：同时需要"模型视角"（训练、prompt、对齐、评测）和"系统视角"（工具、API、环境、基础设施）
+- 一张值得记住的片子："技能会退化"——Anthropic 2026 年的随机对照实验，用 AI 辅助学新库的工程师，后测低 17%，调试能力差距最大。课程的态度是"用 AI 学会怎么学"
+- 历史：agens（行动者）→ 1973 Actor → 1990s Maes / Wooldridge & Jennings（自主、社交、反应、主动）/ Russell & Norvig（通过传感器感知、通过执行器行动）→ RL 时代（Sutton & Barto 的 agent-环境循环、DQN）→ LLM 时代（GPT-3 上下文学习、MRKL、ReAct、ChatGPT、AutoGPT）
+- **agent 解剖（以 ReAct 为准）**：模型 → LLM 核心；Think → 规划与推理；到目前为止的轨迹 → 记忆；Act → 工具；Obs → 环境
+- 推理对 agent 的作用：观察到行动的映射很难，推理能帮助泛化和对齐（"盐用完了 → 推理 → 去右边柜子找酱油"）
+- ReAct vs CoT：只推理会幻觉（Apple Remote 的例子答成 iPhone/iPad），推理+行动能查证纠错；还讲了 Self-Consistency、Reflexion（把失败轨迹提炼成自我提示）、多 agent 辩论、Magentic-One 编排
+- 记忆三类（按内容）：情景（经历，追加事件流、启发式打分取回，Generative Agents）、语义（知识，LLM 对事件推理后写入）、程序（技能，代码形式，Voyager）
+- 工具：Toolformer（模型自学何时调什么 API）、Gorilla（海量 API）
+- **工具调用解剖**：选择（从上下文里的 schema 挑工具）→ 填参数（按类型从任务里填）→ 校验（schema 检查 / 约束解码）→ 执行（沙箱，结果回到上下文）
+- **agent 工程三层**：系统（架构）、数据（训练样例、示范、上下文）、评测（含指标）
+- workflow vs agent：都是复合 AI 系统；workflow 由代码定步骤（Agentless、AlphaCode 2），agent 由 LLM 定步骤（SWE-agent）
+- 五大挑战：可靠性（错误累积）、训练（稀疏奖励、长程、rollout 贵）、长程（上下文增长和漂移）、安全（任务成功 ≠ 安全）、评测
+- 可靠性 ≠ 能力：一致性（同一任务两次结果一样吗）、鲁棒性（小扰动）、可预测的失败方式（失败得清楚、能恢复）——HAL 可靠性面板
+- 安全案例：弹窗攻击成功率 87%、PrivacyLens、谄媚 / reward tampering、多 agent 合谋（2026 年 OpenAI agent 攻击 Hugging Face 事件）
+
+## CS329Z L02 讲义《LLMs for Builders》（176 页）
+- 课程在 LLM 技术栈的最上层（agent），但要懂一点底层
+- LM = 逐 token 条件概率的乘积；生成式 → 可以采样；采样策略：贪心、top-p、top-k、温度、beam search；数学/代码用低温，创作用高温
+- 架构：Transformer 注意力 O(n²)、KV cache 随长度增长；线性注意力 O(n)、状态恒定但长上下文差；实际是混合（如 Kimi K3）；上下文长度上限来自训练时的位置编码
+- 对 agent 的意义：推理效率是设计约束；了解模型长短处，按它来搭 harness
+- 训练：预训练（数据清洗、去重、配比）→ 中训练（加重目标领域）→ 后训练（指令微调、RLHF、RLVR 可验证奖励——单测、Lean 证明、精确匹配、系统状态；**验证器设计要小心**）→ agent 专项训练（SWE-smith）
+- 推理：prefill（算力瓶颈）/ decode（带宽瓶颈）；投机解码；推理时扩展（CoT、推理模型、推理强度 low/medium/high、重复采样、没有验证器时用 self-consistency）
+- **LLM 用于 agent**：
+  - 结构化 I/O：组件之间需要共同的契约；约束解码（SGLang 有限状态机）；DSPy Signature（用 `[[ ## 字段 ## ]]` 标记）；分类头
+  - 上下文里放：系统提示、消息历史、记忆、工具结果、附件
+  - 为什么不全放：context rot
+  - 实用建议：**避免臃肿**（Pi 只有 read / write / edit / bash 四个工具）；用检索找回最相关的；**按顺序追加，不要改前面的内容**（否则 KV cache / 提示缓存失效）；用评测实证地比较上下文方案；压缩时的取舍——留多了很快又要压，丢多了任务做不完
+  - 另一种思路：递归 LM（RLM）
+  - "没有唯一正确的上下文构建方式，HW1 里你会自己实验"
