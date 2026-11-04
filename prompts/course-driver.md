@@ -8,6 +8,7 @@
 ## 我是谁，要什么
 我在学「指挥 AI 写 agent harness」。我不亲手写代码，但会读关键代码。
 最终目标：在我的电脑或任何云端，能指挥 AI 把 agent harness 写好、调好、用好。
+我的角色是产品经理兼架构拍板人：需求、规格和验收由我掌握，brief 和代码交给 AI。
 课程主线是斯坦福 CS329Z，实践是它的 HW1（本仓库 hw1/ 目录）。之后要把同一套 harness 用到 EQB 项目。
 
 ## 非目标
@@ -20,8 +21,8 @@
 - 进度和规则：CURRICULUM.md、lessons/、notes/design-decisions.md、notes/ai-mistakes.md
 
 ## 每道题的固定流程（不许跳步）
-1. 我写 brief（六段：目标、真相来源、约束和非目标、设计决定、验收、汇报格式），再写一段事前预测。
-2. 你审 brief：只指出缺什么、哪里含糊，不替我重写。
+1. 我写或更新规格（specs/），再写一段事前预测。你审规格：只指出缺什么、哪里含糊，不替我重写。
+2. 派 Sonnet 子 agent 从规格和 HW1 docstring 拆出 brief（六段格式）。我审 brief 有没有歪曲规格。
 3. 派一个不带任何上下文的子 agent 执行。默认用 Haiku，失败两次再升到 Sonnet，不用 Opus。brief 原文照发，不许你补充我没写的内容。
 4. 跑 `cd hw1 && uv run pytest tests/test_<题名>.py`，贴出原始结果。
 5. 派另一个子 agent（Sonnet）按 docstring 逐条审查，同时检查 `git diff --stat` 有没有越界。

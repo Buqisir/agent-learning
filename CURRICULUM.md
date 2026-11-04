@@ -20,14 +20,26 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 
 每课的固定结构：**读**（讲义 + 文章）→ **懂**（概念讲解 + 思考题）→ **做**（HW1 的题，测试变绿）→ **迁移**（这一课在 EQB agent 里对应什么）→ **记**（设计决定写进笔记）。
 
-## 学习方式：指挥 AI，不亲手写代码
+## 学习方式：当产品经理兼架构拍板人
 
 最终目标：在自己的电脑或任何云端，能指挥 AI 把 agent harness 写好、调好、用好。
 
-- 你写 brief 和事前预测。子 agent 写代码：默认 Haiku，失败两次升到 Sonnet，不用 Opus。HW1 的测试当裁判。另一个子 agent 做审查。你验收并接受抽查。
-- 你不写代码，但要读关键代码。
-- 流程和证据标准见 `prompts/course-driver.md`（换一台机器，把它贴给 AI 就能接着学）。brief 模板见 `prompts/brief-template.md`。
-- 两本日志：`notes/design-decisions.md`（决定、理由、证据）和 `notes/ai-mistakes.md`（AI 犯的错，以及提炼出的 brief 规则）。
+一件事从想法到代码分五层：需求 → 规格 → 架构 → brief → 代码。越往上越交不出去。
+
+| 层 | 谁来做 |
+|---|---|
+| 需求、规格 | **你**（AI 可以帮你起草、找漏洞） |
+| 架构 | AI 提方案，**你拍板** |
+| brief | Sonnet 从规格拆出来；你只审它有没有歪曲规格 |
+| 代码 | Haiku 写（失败两次升到 Sonnet，不用 Opus） |
+| 验收 | 测试当裁判；**你对照规格**验收，不对照 brief |
+
+- 讲义照读。每读完一讲，回答一个问题：这一讲给了我哪些产品决定可以做？
+- 不写代码，但要读关键代码。
+- 委托链越长，信息丢得越多。所以规格是唯一的依据，验收标准不能出自执行 AI 本身。
+- 你的产品：`specs/eqb-paper-agent/spec.md`，EQB 组卷 agent 的规格。每上完一课补一节。
+- 流程和证据标准见 `prompts/course-driver.md`；brief 模板见 `prompts/brief-template.md`，示范在 `lessons/examples/p1-brief.md`。
+- 两本日志：`notes/design-decisions.md`（决定、理由、证据）和 `notes/ai-mistakes.md`（AI 犯的错，以及提炼出的规则）。
 
 ## 课表
 
@@ -59,6 +71,7 @@ CS329Z 的 HW1（[cs329z/assignment1-harness](https://github.com/cs329z/assignme
 - `CURRICULUM.md`：本文件
 - `hw1/`：CS329Z HW1 starter（MIT 协议，来源见 `hw1/UPSTREAM.md`）
 - `prompts/`：可复用的提示词（课程驱动、brief 模板、做深元提示词）
+- `specs/`：产品规格（你写的）
 
 ## 讲义
 
